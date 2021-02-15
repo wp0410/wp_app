@@ -91,10 +91,10 @@ if __name__ == '__main__':
     iot_hosts = []
     if settings.contains('logging'):
         logging.config.dictConfig(settings['logging'])
-    for process_group in settings['process_groups']:
-        iot_hosts.append(iot_runtime.iot_host.IotHost(settings['config_db_path'], process_group))
     signal.signal(signal.SIGTERM, handle_signal)
     signal.signal(signal.SIGINT, handle_signal)
+    for process_group in settings['process_groups']:
+        iot_hosts.append(iot_runtime.iot_host.IotHost(settings['config_db_path'], process_group))
     for iot_host in iot_hosts:
         iot_host.start_agents()
         if settings.contains('statistics_db_path'):
