@@ -88,18 +88,28 @@ if __name__ == '__main__':
         settings = ConfigFile(sys.argv[1])
     else:
         settings = ConfigFile()
-    iot_hosts = []
+
+    # Configure the logging system
     if settings.contains('logging'):
         logging.config.dictConfig(settings['logging'])
+
+    # Set the signal handlers for graceful termination on SIGTERM and SIGINT
     signal.signal(signal.SIGTERM, handle_signal)
     signal.signal(signal.SIGINT, handle_signal)
-    for process_group in settings['process_groups']:
-        iot_hosts.append(iot_runtime.iot_host.IotHost(settings['config_db_path'], process_group))
-    for iot_host in iot_hosts:
-        iot_host.start_agents()
-        if settings.contains('statistics_db_path'):
-            iot_host.start_data_recording(settings['statistics_db_path'])
+
+    # Create the IotHost instance for the process group:
+    iot_host = iot_runtime.iot_host.IotHost(settings['config_db_path'], settings['process_group'])
+    iot_host.start_agents()
+
+    # Start the message recorder (depending on configuration)
+    if settings.contains('msg_recorder'):
+        rec_settings = settings['msg_recorder']
+        if rec_settings['start_recorder'] != 0:
+            iot_host.start_data_recording(rec_settings['statistics_db_path'])
+
+    # Loop until the exit signal is set (by SIGTERM or SIGINT)
     while not exit_signal.is_set:
         time.sleep(1)
-    for iot_host in iot_hosts:
-        iot_host.stop_agents()
+
+    # Cleanup
+    iot_host.stop_agents()
